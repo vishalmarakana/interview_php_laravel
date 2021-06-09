@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Supplier;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class SupplierController extends Controller
 {
@@ -55,9 +54,6 @@ class SupplierController extends Controller
                 return response('', 204);
             }
         }
-
-        Log::info(json_encode($supplierExist));
-
     }
 
     /**
