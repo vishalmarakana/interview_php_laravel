@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class SupplierController extends Controller
 {
@@ -37,6 +38,26 @@ class SupplierController extends Controller
      */
     public function store(Request $request)
     {
+        $supplierExist = Supplier::where('name', $request->name)->first();
+
+        if($supplierExist){
+            return response('', 422);
+        } else {
+            $supplier = Supplier::create([
+                'name' => $request->name,
+                'info' => $request->info,
+                'rules' => $request->rules,
+                'district' => $request->district,
+                'url' => $request->url
+            ]);
+
+            if($supplier){
+                return response('', 204);
+            }
+        }
+
+        Log::info(json_encode($supplierExist));
+
     }
 
     /**
