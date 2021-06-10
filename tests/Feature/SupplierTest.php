@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Supplier;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -20,7 +22,35 @@ class SupplierTest extends TestCase
     public function testCalculateAmountOfHoursDuringTheWeekSuppliersAreWorking()
     {
         $response = $this->get('/api/suppliers');
-        $hours = NAN;
+        $suppliers = collect(\json_decode($response->getContent(), true)['data']['suppliers']);
+
+        $weekDays = collect(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
+
+        Collection::macro('splitByDash', function () {
+            return $this->map(function ($value) {
+                return explode('-', $value);
+            });
+        });
+
+        Collection::macro('removeExtraCharacters', function () {
+            return $this->map(function ($value) {
+                return preg_replace('/[^0-9.]+: /', '', $value);
+            });
+        });
+
+        $workingHours = collect([]);
+        $suppliers->map(function ($name) use($weekDays, $workingHours) {
+            $weekDays->map(function ($day) use($name, $workingHours) {
+                $dayHoursInShift = collect(explode(',', $name[$day]))->splitByDash()->removeExtraCharacters();
+                $dayHoursInShift->map(function ($timeSlots) use($workingHours) {
+                    $t1 = Carbon::parse("2016-07-01 {$timeSlots[0]}:00");
+                    $t2 = Carbon::parse("2016-07-01 {$timeSlots[1]}:00");
+                    $diff = $t1->diff($t2)->h;
+                    $workingHours->push($diff);
+                });
+            });
+        });
+        $hours = $workingHours->sum();
 
         $response->assertStatus(200);
         $this->assertEquals(136, $hours,
